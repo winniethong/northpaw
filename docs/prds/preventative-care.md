@@ -1,14 +1,14 @@
-# PRD — Preventative Care Dashboard (F10) + Reminders (F11)
+# PRD - Preventative Care Dashboard (F10) + Reminders (F11)
 
-> Both features are UIs over one rules engine. The original spec defined the UIs but not the logic that decides when care is due — this PRD supplies it.
+> Both features are UIs over one rules engine. The original spec defined the UIs but not the logic that decides when care is due. This PRD supplies it.
 
 ## Problem
 
-Owners forget preventative care (annual exams, vaccines, dental, bloodwork). In the original spec, "Vaccine Due," "Bloodwork Recommended," etc. had no defined trigger — the dashboards had no engine behind them.
+Owners forget preventative care (annual exams, vaccines, dental, bloodwork). In the original spec, "Vaccine Due," "Bloodwork Recommended," etc. had no defined trigger. The dashboards had no engine behind them.
 
 ## Goals
 
-Compute what care each pet needs next, when it's due, and at what priority — from the pet's own history — and surface overdue/soon items as reminders.
+Compute what care each pet needs next, when it's due, and at what priority from the pet's own history. Surface overdue/soon items as reminders.
 
 ## Users
 
@@ -66,11 +66,55 @@ Renders all applicable rules with `due_date`, `status`, and `priority`. Shows up
 
 ### Reminders (F11)
 
-The same query filtered to `status in ('overdue','due_soon')`, surfaced as **in-app dashboard alerts only** (no email, no push for MVP). One engine powers both features — nothing is hardcoded in the UI.
+The same query filtered to `status in ('overdue','due_soon')`, surfaced as **in-app dashboard alerts only** (no email, no push for MVP). One engine powers both features. Nothing is hardcoded in the UI.
 
 ## Data
 
 `care_rules` (above) reading from `health_events` / `vaccination_details` (see [data-model.md](./data-model.md)). No new event storage.
+
+## Technical Design
+
+- Route: dashboard metric widgets and pet-level care view
+- Shared engine: care schedule query or server function
+- Inputs: pet species, pet age, health event history, vaccine expirations
+- Reads: `pets`, `care_rules`, `health_events`, `vaccination_details`
+- Writes: none for MVP reminders
+- Reminder type: in-app dashboard alert
+- UI rule: no hardcoded due-date logic in components
+
+## Data Ownership
+
+- `care_rules`: seeded reference data
+- `health_events`: user-owned care history
+- `vaccination_details.expiration_date`: preferred vaccine due source
+- Schedule output: derived, not stored
+- Reminders: query results, not notification rows for MVP
+
+## Validation Rules
+
+- Rule species must be `all` or match pet species
+- Rule applies only inside age bounds
+- `interval_months`: required positive number
+- `trigger_event_type`: must match supported event type
+- Vaccine expiration overrides interval fallback
+
+## Edge Cases
+
+- Pet has no matching events
+- Pet has unknown birth date
+- Pet species has no exact rule
+- Vaccine has no expiration date
+- Multiple matching events on same date
+- Rule overlaps senior and adult ranges
+
+## Acceptance Criteria
+
+- Applicable rules are computed from species and age
+- Due dates are based on latest matching event
+- Vaccine due date uses `expiration_date` when present
+- Overdue and due-soon items appear in dashboard alerts
+- Adult and senior fixture pets produce expected schedules
+- UI renders no care widget before the engine exists
 
 ## Success Metrics
 

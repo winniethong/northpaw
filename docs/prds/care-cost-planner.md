@@ -1,4 +1,4 @@
-# PRD — Care Cost Planner (F9)
+# PRD - Care Cost Planner (F9)
 
 > Northpaw's major differentiator: estimate out-of-pocket cost before a care decision. Fixes the original spec's incorrect math and missing insurance factors. No AI, no real-time provider integrations.
 
@@ -40,12 +40,12 @@ Dental cleaning, C = $500–$1,500, r = 0.80, deductible $250 (unmet, no limit h
 | reimbursed = base × 0.80 | 200 | 1,000 |
 | **owner_cost = C − reimbursed** | **$300** | **$500** |
 
-Correct estimate: **$300–$500**. (The original spec said $250–$550 — wrong, and it ignored deductible-met, deductible type, and the annual limit. All three are now modeled.)
+Correct estimate: **$300-$500**. (The original spec said $250-$550. It ignored deductible-met, deductible type, and the annual limit. All three are now modeled.)
 
 ### Reference implementation
 
 ```ts
-// Pure function — unit-test against a case table (verification step).
+// Pure function; unit-test against a case table.
 export function estimateOwnerCost(opts: {
   cost: number; rate: number; deductibleLeft: number; limitLeft: number;
 }): number {
@@ -58,7 +58,7 @@ export function estimateOwnerCost(opts: {
 
 ### Required disclaimer (legal)
 
-Render near every cost/reimbursement figure: *"Estimate only. Based on national average ranges and the policy details you entered — not a quote. Actual costs and reimbursement vary by provider, region, and policy terms."*
+Render near every cost/reimbursement figure: *"Estimate only. Based on national average ranges and the policy details you entered. Not a quote. Actual costs and reimbursement vary by provider, region, and policy terms."*
 
 ## Data
 
@@ -70,6 +70,51 @@ cost_benchmarks (
   low_usd, high_usd, source_note    -- source + date the range came from
 )
 ```
+
+## Technical Design
+
+- Route: pet-level cost planner view
+- Inputs: procedure key, species, optional insurance policy
+- Reads: `cost_benchmarks`, `insurance_policies`, `pets`
+- Writes: none for MVP estimate generation
+- Calculation layer: pure TypeScript function
+- Display layer: low and high owner-cost estimates
+- Disclaimer: rendered near every estimate
+
+## Data Ownership
+
+- `cost_benchmarks`: seeded reference data
+- `insurance_policies`: user-entered pet data
+- Estimate output: derived, not stored
+- Spend tracking: out of scope
+- Future analytics: separate Python workflow, not MVP request path
+
+## Validation Rules
+
+- Procedure key must exist in `cost_benchmarks`
+- Species must match the pet profile
+- Reimbursement rate must be between 0 and 1
+- Deductible left cannot be negative
+- Annual limit left cannot be negative
+- No policy should fall back to benchmark range only
+
+## Edge Cases
+
+- No insurance policy exists
+- Deductible already met
+- Annual limit already reached
+- Cost benchmark missing for species
+- Less common species needs generic fallback
+- Low and high estimate produce same value
+
+## Acceptance Criteria
+
+- Formula matches hand-checked case table
+- Estimate respects deductible before reimbursement
+- Estimate respects remaining annual limit
+- No-insurance case returns full benchmark range
+- Every estimate renders the required disclaimer
+- Missing benchmark shows a clear empty state
 
 ## Success Metrics
 
