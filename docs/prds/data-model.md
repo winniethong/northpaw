@@ -1,4 +1,4 @@
-# PRD — Data Model, Spine & Security (cross-cutting)
+# PRD - Data Model, Spine & Security (cross-cutting)
 
 > Shared foundation referenced by every feature PRD. Resolves the review's structural issues: timeline-as-spine, schema duplication, stale weight, attachment overlap, and row-level security.
 
@@ -32,15 +32,16 @@ This replaces the standalone `vet_visits` and `vaccinations` tables from the ori
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
+  name text not null,
   created_at timestamptz not null default now()
 );
 
--- PETS  (no weight column — weight is derived, see below)
+-- PETS  (no weight column; weight is derived, see below)
 create table pets (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references profiles(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,  -- matches DB; RLS keys off auth.uid()
   name text not null,
-  species text not null,            -- 'dog' | 'cat'
+  species text not null,            -- dog|cat|bird|rabbit|guinea_pig|turtle|fish|reptile|horse|other
   breed text,
   birth_date date,
   sex text,                         -- 'male' | 'female' | 'unknown'
@@ -128,6 +129,34 @@ Attachments live **only** here (replacing `health_events.attachment_url`). An ev
 
 `insurance_policies`, `cost_benchmarks`, and `care_rules` are defined in their respective feature PRDs ([insurance](./insurance.md), [care-cost-planner](./care-cost-planner.md), [preventative-care](./preventative-care.md)).
 
+## Supabase backend design
+
+- `auth.users`: account identity and session source
+- `profiles`: joinable app profile with `email` and `name`
+- `pets.owner_id`: direct reference to `auth.users(id)` for RLS checks
+- `health_events`: timeline source of truth for pet health records
+- `documents`: single attachment table plus Supabase Storage object path
+- `pet_current_weight`: derived view from latest `weight` event
+- `add_timeline_event`: RPC boundary for atomic spine plus detail inserts
+- Next.js server actions: validation, mutation calls, cache revalidation, redirects
+
+## Data ownership
+
+- User-entered: `profiles`, `pets`, `health_events`, detail tables, `documents`, `insurance_policies`
+- Derived: `pet_current_weight`, care schedule outputs, cost estimate outputs
+- Seeded: `cost_benchmarks`, `care_rules`
+- Future analytics: owner-scoped exports or scheduled reads from Postgres
+
+## Future ML workflow: cost and health insights
+
+- Input data: pet profile fields, event history, insurance fields, cost benchmark outputs
+- Storage layer: Supabase/Postgres tables with RLS and owner-scoped access
+- Processing layer: Python scripts or scheduled jobs outside the request path
+- Model targets: cost range prediction, health trend detection, care insight ranking
+- Product output: advisory insight cards in the app
+- Example output: "Milo's estimated next-month care cost is $120-$180"
+- Guardrails: no diagnosis, no emergency guidance, no hidden cross-user data access
+
 ---
 
 ## Row-Level Security (mandatory)
@@ -157,7 +186,7 @@ Detail tables (`*_details`) gate through their parent event's pet. Supabase Stor
 - **Hard delete pet:** `on delete cascade` clears events, details, documents, policies; delete storage objects in the same edge function.
 - **Document delete:** explicit action removes row + storage object.
 - **Account delete:** cascade `profiles` → `auth.users`; offer "Download my data" first.
-- **Export:** one endpoint returns a ZIP — JSON of all the user's rows plus uploaded files (supports vet handoff).
+- **Export:** one endpoint returns a ZIP with JSON of all the user's rows plus uploaded files.
 
 ## PII posture
 

@@ -1,4 +1,4 @@
-# PRD — Authentication (F1)
+# PRD - Authentication (F1)
 
 > Secure access to a user's pets and records via Supabase Auth.
 
@@ -16,13 +16,55 @@ All users.
 
 ## Requirements
 
-Users can create an account, log in, and log out (Supabase Auth, email + password for MVP). On signup, a `profiles` row mirrors the `auth.users` record for joins. All data access is gated by Row-Level Security keyed on `auth.uid()` — see [data-model.md](./data-model.md).
+Users can create an account, log in, and log out (Supabase Auth, name + email + password for MVP). On signup, a `profiles` row mirrors the `auth.users` record for joins and app display. All data access is gated by Row-Level Security keyed on `auth.uid()`; see [data-model.md](./data-model.md).
 
 ## Data
 
 ```sql
-profiles ( id uuid PK → auth.users, email text, created_at timestamptz )
+profiles ( id uuid PK → auth.users, email text, name text, created_at timestamptz )
 ```
+
+## Technical Design
+
+- Provider: Supabase Auth
+- Auth method: email and password
+- Signup input: `name`, `email`, `password`
+- Profile sync: `handle_new_user` trigger
+- Session access: Supabase server client
+- Route guard: middleware through `updateSession`
+- Public routes: `/`, `/login`, `/signup`
+- Protected routes: `/dashboard`, pet pages, authenticated actions
+
+## Server Actions
+
+- `signup`: validate name, email, password, then create Supabase Auth user
+- `login`: validate email and password, then create session
+- `logout`: clear session and redirect
+- `signup` metadata: pass `name` through `options.data`
+
+## Data Ownership
+
+- `profiles.id`: matches `auth.users.id`
+- `profiles.email`: copied from Supabase Auth user
+- `profiles.name`: copied from signup metadata or fallback
+- RLS dependency: downstream tables compare owner IDs to `auth.uid()`
+
+## Edge Cases
+
+- Missing name on signup
+- Missing email or password
+- Password shorter than minimum length
+- Supabase Auth error
+- Logged-out request to protected route
+- Logged-in request to auth pages
+
+## Acceptance Criteria
+
+- New signup creates an Auth user and a `profiles` row
+- Logged-in user reaches `/dashboard`
+- Logged-out user cannot load protected data
+- Logged-in user redirects away from `/login` and `/signup`
+- RLS prevents cross-user pet access
 
 ## Success Metrics
 

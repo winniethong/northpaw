@@ -38,7 +38,9 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublicRoute = PUBLIC_ROUTES.some((route) => path.startsWith(route));
+  const isHomeRoute = path === "/";
+  const isPublicRoute =
+    isHomeRoute || PUBLIC_ROUTES.some((route) => path.startsWith(route));
 
   // Not signed in and on a protected route -> send to login.
   if (!user && !isPublicRoute) {
@@ -48,7 +50,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Signed in but on an auth route -> send to dashboard.
-  if (user && isPublicRoute) {
+  if (user && !isHomeRoute && isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

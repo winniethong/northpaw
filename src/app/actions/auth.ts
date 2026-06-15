@@ -11,6 +11,10 @@ function readCredentials(formData: FormData) {
   return { email, password };
 }
 
+function readName(formData: FormData) {
+  return String(formData.get("name") ?? "").trim();
+}
+
 export async function login(
   _prevState: AuthState,
   formData: FormData
@@ -33,7 +37,11 @@ export async function signup(
   _prevState: AuthState,
   formData: FormData
 ): Promise<AuthState> {
+  const name = readName(formData);
   const { email, password } = readCredentials(formData);
+  if (!name) {
+    return { error: "Name is required." };
+  }
   if (!email || !password) {
     return { error: "Email and password are required." };
   }
@@ -42,7 +50,11 @@ export async function signup(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name } },
+  });
   if (error) {
     return { error: error.message };
   }

@@ -1,17 +1,37 @@
 import { login } from "@/app/actions/auth";
 import { AuthForm } from "./auth-form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PublicHeader } from "@/components/public-header";
 
 export default function LoginPage() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 p-6">
-      <h1 className="text-2xl font-semibold">Log in to Northpaw</h1>
-      <AuthForm
-        action={login}
-        submitLabel="Log in"
-        altPrompt="Don't have an account?"
-        altHref="/signup"
-        altLabel="Sign up"
-      />
-    </main>
+    <>
+      <PublicHeader action="back-home" />
+      <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-sm">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Welcome back</CardTitle>
+              <CardDescription>Log in to your Northpaw account.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AuthForm
+                action={login}
+                submitLabel="Log in"
+                altPrompt="Don't have an account?"
+                altHref="/signup"
+                altLabel="Sign up"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </>
   );
 }
