@@ -4,7 +4,7 @@ Northpaw is a pet care platform for organizing pet profiles, health timelines, r
 
 ## Live App
 
-- Public URL: [https://northpaw.vercel.app/dashboard](https://northpaw.vercel.app/dashboard)
+- Public URL: [https://northpaw.vercel.app](https://northpaw.vercel.app/)
 - Account access: users can create an account, log in, and manage their own pet records
 - Data boundary: Supabase Auth and Row-Level Security keep user data scoped to the account owner
 
