@@ -18,12 +18,14 @@ type Filter = (typeof FILTERS)[number]["value"];
 export function TimelineSection({
   events,
   action,
+  eventIdsWithDocs,
 }: {
   events: HealthEvent[];
   action: (
     state: TimelineFormState,
     formData: FormData
   ) => Promise<TimelineFormState>;
+  eventIdsWithDocs?: Set<string>;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const filtered =
@@ -50,7 +52,7 @@ export function TimelineSection({
         ))}
       </div>
 
-      <Timeline events={filtered} />
+      <Timeline events={filtered} eventIdsWithDocs={eventIdsWithDocs} />
     </section>
   );
 }

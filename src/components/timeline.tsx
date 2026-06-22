@@ -1,3 +1,4 @@
+import { Paperclip } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import type { EventType, HealthEvent } from "@/lib/types";
@@ -46,7 +47,13 @@ function detailSummary(event: HealthEvent): string | null {
   }
 }
 
-export function Timeline({ events }: { events: HealthEvent[] }) {
+export function Timeline({
+  events,
+  eventIdsWithDocs,
+}: {
+  events: HealthEvent[];
+  eventIdsWithDocs?: Set<string>;
+}) {
   if (events.length === 0) {
     return (
       <p className="text-muted-foreground">
@@ -71,7 +78,15 @@ export function Timeline({ events }: { events: HealthEvent[] }) {
               <Badge variant="secondary">
                 {EVENT_LABELS[event.event_type]}
               </Badge>
-              <span className="font-medium">{event.title}</span>
+              <span className="flex items-center gap-1.5 font-medium">
+                {event.title}
+                {eventIdsWithDocs?.has(event.id) && (
+                  <Paperclip
+                    className="size-3.5 text-muted-foreground"
+                    aria-label="Has attached documents"
+                  />
+                )}
+              </span>
               {summary && (
                 <span className="text-sm text-muted-foreground">{summary}</span>
               )}

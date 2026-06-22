@@ -8,7 +8,13 @@ import { PetProfileHeader } from "@/components/pet-profile-header";
 import { PetAbout } from "@/components/pet-about";
 import { UpcomingCare } from "@/components/upcoming-care";
 import { TimelineSection } from "@/components/timeline-section";
-import type { CurrentWeight, HealthEvent, Pet } from "@/lib/types";
+import { DocumentsSection } from "@/components/documents-section";
+import type {
+  CurrentWeight,
+  HealthEvent,
+  PetDocument,
+  Pet,
+} from "@/lib/types";
 
 // PostgREST returns 1:1 embeds as an object, but coerce defensively.
 function one<T>(value: T | T[] | null | undefined): T | null {
@@ -36,7 +42,8 @@ export default async function PetPage({
     .maybeSingle();
   if (!pet) notFound();
 
-  const [{ data: weight }, { data: rawEvents }] = await Promise.all([
+  const [{ data: weight }, { data: rawEvents }, { data: rawDocuments }] =
+    await Promise.all([
     supabase
       .from("pet_current_weight")
       .select("*")
@@ -54,6 +61,11 @@ export default async function PetPage({
       .eq("pet_id", petId)
       .order("event_date", { ascending: false })
       .order("created_at", { ascending: false }),
+    supabase
+      .from("documents")
+      .select("*")
+      .eq("pet_id", petId)
+      .order("uploaded_at", { ascending: false }),
   ]);
 
   const events: HealthEvent[] = (rawEvents ?? []).map((e) => ({
@@ -63,6 +75,16 @@ export default async function PetPage({
     procedure_details: one(e.procedure_details),
     weight_details: one(e.weight_details),
   })) as HealthEvent[];
+
+  const documents = (rawDocuments as PetDocument[]) ?? [];
+  const eventIdsWithDocs = new Set(
+    documents.map((d) => d.event_id).filter((id): id is string => !!id)
+  );
+  const linkableEvents = events.map((e) => ({
+    id: e.id,
+    title: e.title,
+    event_date: e.event_date,
+  }));
 
   const reminders = vaccineReminders(events);
   const addEvent = addTimelineEvent.bind(null, petId);
@@ -84,9 +106,20 @@ export default async function PetPage({
           <UpcomingCare reminders={reminders} />
         </div>
         <div className="md:col-span-2">
-          <TimelineSection events={events} action={addEvent} />
+          <TimelineSection
+            events={events}
+            action={addEvent}
+            eventIdsWithDocs={eventIdsWithDocs}
+          />
         </div>
       </div>
+
+      <DocumentsSection
+        petId={petId}
+        userId={user.id}
+        documents={documents}
+        events={linkableEvents}
+      />
     </main>
   );
 }
