@@ -97,3 +97,40 @@ export type CurrentWeight = {
   weight_kg: number;
   measured_on: string;
 };
+
+export const DOCUMENT_CATEGORIES = [
+  { value: "vaccination", label: "Vaccination record" },
+  { value: "bloodwork", label: "Bloodwork" },
+  { value: "lab", label: "Lab results" },
+  { value: "vet_notes", label: "Vet notes" },
+  { value: "procedure", label: "Procedure records" },
+  { value: "insurance", label: "Insurance documents" },
+  { value: "misc", label: "Miscellaneous" },
+] as const;
+
+export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number]["value"];
+
+export function documentCategoryLabel(category: string) {
+  return (
+    DOCUMENT_CATEGORIES.find((c) => c.value === category)?.label ??
+    category.replaceAll("_", " ")
+  );
+}
+
+export const DOCUMENT_BUCKET = "pet-documents";
+
+// Accepted upload types (mirrors the bucket's allowed_mime_types).
+export const DOCUMENT_ACCEPT = ".pdf,.jpg,.jpeg,.png";
+export const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+export type PetDocument = {
+  id: string;
+  pet_id: string;
+  category: DocumentCategory;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  event_id: string | null;
+  uploaded_at: string;
+};
