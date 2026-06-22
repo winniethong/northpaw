@@ -9,6 +9,7 @@ import { PetAbout } from "@/components/pet-about";
 import { UpcomingCare } from "@/components/upcoming-care";
 import { TimelineSection } from "@/components/timeline-section";
 import { DocumentsSection } from "@/components/documents-section";
+import { AskPet } from "@/components/ask-pet";
 import type {
   CurrentWeight,
   HealthEvent,
@@ -120,6 +121,8 @@ export default async function PetPage({
         documents={documents}
         events={linkableEvents}
       />
+
+      <AskPet petId={petId} petName={(pet as Pet).name} />
     </main>
   );
 }
